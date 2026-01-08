@@ -4,7 +4,7 @@ const { DataTypes } = require('sequelize');
 const User = sequelize.define('User', {
   username: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
-  role: { type: DataTypes.ENUM('viloyat', 'tuman', 'tahlilchi'), allowNull: false },
+  role: { type: DataTypes.ENUM('viloyat', 'tuman', 'tahlilchi', 'admin'), allowNull: false }, // yangi 'admin' roli
   department: { type: DataTypes.STRING },
 });
 
@@ -12,7 +12,7 @@ const Task = sequelize.define('Task', {
   title: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT },
   deadline: { type: DataTypes.DATE },
-  answersVisible: { type: DataTypes.BOOLEAN, defaultValue: true }, // javoblar ko'rinsinmi
+  answersVisible: { type: DataTypes.BOOLEAN, defaultValue: true },
 });
 
 const Response = sequelize.define('Response', {
@@ -22,7 +22,6 @@ const Response = sequelize.define('Response', {
   submittedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 });
 
-// Bog'lanishlar
 Task.belongsTo(User, { as: 'creator', foreignKey: 'creatorId' });
 User.hasMany(Task, { foreignKey: 'creatorId' });
 

@@ -1,30 +1,34 @@
 const bcrypt = require('bcrypt');
-const { User } = require('./src/models/index');
+const { User, sequelize } = require('./src/models/index');
 
-async function createUsers() {
+async function createDemoUsers() {
+  await sequelize.sync({ alter: true });
+
   const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash('123456', salt);
 
   const users = [
-    { username: 'tahlilchi', password: '123456', role: 'tahlilchi', department: 'Tahlilchi' },
-    { username: 'viloyat1', password: '123456', role: 'viloyat', department: 'Viloyat bo\'lim 1' },
+    { username: 'admin', role: 'admin', department: 'Admin' }, // yangi admin
+    { username: 'tahlilchi', role: 'tahlilchi', department: 'Tahlilchi' },
+    { username: 'viloyat1', role: 'viloyat', department: 'Viloyat bo\'lim 1' },
     ...Array.from({ length: 15 }, (_, i) => ({
       username: `tuman${i + 1}`,
-      password: '123456',
       role: 'tuman',
       department: `Tuman ${i + 1}`
     }))
   ];
 
   for (let u of users) {
-    const hash = await bcrypt.hash(u.password, salt);
-    await User.findOrCreate({
-      where: { username: u.username },
-      defaults: { ...u, password: hash }
+    await User.upsert({
+      username: u.username,
+      password: hash,
+      role: u.role,
+      department: u.department
     });
   }
 
-  console.log('Demo foydalanuvchilar yaratildi!');
+  console.log('Demo foydalanuvchilar yaratildi! Admin login: admin / 123456');
   process.exit();
 }
 
-createUsers();
+createDemoUsers().catch(err => console.error(err));

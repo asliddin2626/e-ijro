@@ -25,6 +25,25 @@ router.post('/create', protect, async (req, res) => {
   }
 });
 
+// Topshiriqni o‘chirish (faqat admin)
+router.delete('/delete/:taskId', protect, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Faqat admin o‘chirishi mumkin' });
+  }
+
+  const { taskId } = req.params;
+
+  try {
+    const task = await Task.findByPk(taskId);
+    if (!task) return res.status(404).json({ message: 'Topshiriq topilmadi' });
+
+    await task.destroy();
+    res.json({ message: 'Topshiriq o‘chirildi' });
+  } catch (err) {
+    res.status(500).json({ message: 'Xato yuz berdi' });
+  }
+});
+
 // O'z topshiriqlarini ko'rish
 router.get('/my-tasks', protect, async (req, res) => {
   if (req.user.role !== 'viloyat') {
