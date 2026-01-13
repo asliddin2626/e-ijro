@@ -13,8 +13,9 @@ function App() {
   const [comment, setComment] = useState('')
   const [files, setFiles] = useState([])
 
-  // Admin uchun yangi user
+  // Yangi foydalanuvchi qo'shish
   const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [newRole, setNewRole] = useState('tuman')
   const [newDepartment, setNewDepartment] = useState('')
 
@@ -22,8 +23,9 @@ function App() {
   const [editingUser, setEditingUser] = useState(null)
   const [editRole, setEditRole] = useState('')
   const [editDepartment, setEditDepartment] = useState('')
+  const [editPassword, setEditPassword] = useState('')
 
-  // Yig‘iladigan guruhlar (sahifa ochilganda yopiq)
+  // Yig'iladigan guruhlar va topshiriqlar
   const [openSections, setOpenSections] = useState({
     tumanlar: false,
     viloyatlar: false,
@@ -35,9 +37,6 @@ function App() {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
-  // Yig‘iladigan topshiriqlar
-  const [openTasks, setOpenTasks] = useState({})
-
   const toggleTask = (taskId) => {
     setOpenTasks(prev => ({ ...prev, [taskId]: !prev[taskId] }))
   }
@@ -48,7 +47,7 @@ function App() {
   const [deadline, setDeadline] = useState('')
   const [answersVisible, setAnswersVisible] = useState(true)
 
-  const API_URL = import.meta.env.VITE_API_URL
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   const loadData = async () => {
     const token = localStorage.getItem('token')
@@ -147,11 +146,15 @@ function App() {
 
   const handleReview = async (responseId, status, reason = '') => {
     const token = localStorage.getItem('token')
-    await axios.post(`${API_URL}/response/review/${responseId}`, { status, rejectReason: reason }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    setMessage(status === 'accepted' ? 'Qabul qilindi!' : 'Rad etildi!')
-    loadData()
+    try {
+      await axios.post(`${API_URL}/response/review/${responseId}`, { status, rejectReason: reason }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setMessage(status === 'accepted' ? 'Qabul qilindi!' : 'Rad etildi!')
+      loadData()
+    } catch (err) {
+      setMessage('Xato yuz berdi')
+    }
   }
 
   const handleCreateUser = async (e) => {
@@ -160,6 +163,7 @@ function App() {
     try {
       await axios.post(`${API_URL}/admin/user/create`, {
         username: newUsername,
+        password: newPassword,
         role: newRole,
         department: newDepartment || null
       }, {
@@ -167,6 +171,7 @@ function App() {
       })
       setMessage('Yangi foydalanuvchi qo‘shildi!')
       setNewUsername('')
+      setNewPassword('')
       setNewDepartment('')
       loadData()
     } catch (err) {
@@ -181,12 +186,14 @@ function App() {
       await axios.put(`${API_URL}/admin/user/edit`, {
         userId: editingUser.id,
         role: editRole,
-        department: editDepartment
+        department: editDepartment,
+        password: editPassword || undefined
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setMessage('Ma\'lumotlar o‘zgartirildi!')
       setEditingUser(null)
+      setEditPassword('')
       loadData()
     } catch (err) {
       setMessage('Xato yuz berdi')
@@ -221,7 +228,7 @@ function App() {
   }
 
   const handleDeleteTask = async (taskId) => {
-    if (!confirm('Bu topshiriqni o‘chirishni tasdiqlaysizmi? Barcha javoblar ham o‘chadi!')) return
+    if (!confirm('Bu topshiriqni o‘chirishni tasdiqlaysizmi?')) return
     const token = localStorage.getItem('token')
     try {
       await axios.delete(`${API_URL}/task/delete/${taskId}`, {
@@ -280,8 +287,9 @@ function App() {
 
           <h3>Yangi foydalanuvchi qo‘shish</h3>
           <form onSubmit={handleCreateUser} style={{ marginBottom: '30px' }}>
-            <input type="text" placeholder="Login" value={newUsername} onChange={e => setNewUsername(e.target.value)} required style={{ padding: '10px', margin: '5px' }} />
-            <input type="text" placeholder="Bo‘lim nomi" value={newDepartment} onChange={e => setNewDepartment(e.target.value)} style={{ padding: '10px', margin: '5px' }} />
+            <input type="text" placeholder="Login" value={newUsername} onChange={e => setNewUsername(e.target.value)} required style={{ padding: '10px', margin: '5px', width: '200px' }} />
+            <input type="password" placeholder="Parol (bo‘sh qoldirsa 123456)" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} />
+            <input type="text" placeholder="Bo‘lim nomi" value={newDepartment} onChange={e => setNewDepartment(e.target.value)} style={{ padding: '10px', margin: '5px', width: '250px' }} />
             <select value={newRole} onChange={e => setNewRole(e.target.value)} style={{ padding: '10px', margin: '5px' }}>
               <option value="tuman">Tuman bo‘limi</option>
               <option value="viloyat">Viloyat bo‘limi</option>
@@ -317,6 +325,7 @@ function App() {
                             setEditingUser(u)
                             setEditRole(u.role)
                             setEditDepartment(u.department || '')
+                            setEditPassword('')
                           }} style={{ backgroundColor: '#007bff', color: 'white', padding: '5px 10px', marginRight: '5px' }}>Tahrirlash</button>
                           <button onClick={() => handleResetPassword(u.id)} style={{ backgroundColor: '#ffc107', color: 'black', padding: '5px 10px', marginRight: '5px' }}>Parolni reset</button>
                           <button onClick={() => handleDeleteUser(u.id)} style={{ backgroundColor: '#dc3545', color: 'white', padding: '5px 10px' }}>O‘chirish</button>
@@ -352,6 +361,7 @@ function App() {
                             setEditingUser(u)
                             setEditRole(u.role)
                             setEditDepartment(u.department || '')
+                            setEditPassword('')
                           }} style={{ backgroundColor: '#007bff', color: 'white', padding: '5px 10px', marginRight: '5px' }}>Tahrirlash</button>
                           <button onClick={() => handleResetPassword(u.id)} style={{ backgroundColor: '#ffc107', color: 'black', padding: '5px 10px', marginRight: '5px' }}>Parolni reset</button>
                           <button onClick={() => handleDeleteUser(u.id)} style={{ backgroundColor: '#dc3545', color: 'white', padding: '5px 10px' }}>O‘chirish</button>
@@ -387,6 +397,7 @@ function App() {
                             setEditingUser(u)
                             setEditRole(u.role)
                             setEditDepartment(u.department || '')
+                            setEditPassword('')
                           }} style={{ backgroundColor: '#007bff', color: 'white', padding: '5px 10px', marginRight: '5px' }}>Tahrirlash</button>
                           <button onClick={() => handleResetPassword(u.id)} style={{ backgroundColor: '#ffc107', color: 'black', padding: '5px 10px', marginRight: '5px' }}>Parolni reset</button>
                           <button onClick={() => handleDeleteUser(u.id)} style={{ backgroundColor: '#dc3545', color: 'white', padding: '5px 10px' }}>O‘chirish</button>
@@ -422,6 +433,7 @@ function App() {
                             setEditingUser(u)
                             setEditRole(u.role)
                             setEditDepartment(u.department || '')
+                            setEditPassword('')
                           }} style={{ backgroundColor: '#007bff', color: 'white', padding: '5px 10px', marginRight: '5px' }}>Tahrirlash</button>
                           <button onClick={() => handleResetPassword(u.id)} style={{ backgroundColor: '#ffc107', color: 'black', padding: '5px 10px' }}>Parolni reset</button>
                         </td>
@@ -457,99 +469,169 @@ function App() {
         </div>
       )}
 
-      {/* Barcha topshiriqlar – yig‘iladigan */}
+      {/* Barcha topshiriqlar – jadval ko‘rinishi */}
       <h2>Barcha topshiriqlar ({tasks.length} ta)</h2>
-      {tasks.map(task => (
-        <div key={task.id} style={{ border: '1px solid #ddd', borderRadius: '8px', marginBottom: '10px', backgroundColor: '#fff' }}>
-          <div 
-            onClick={() => toggleTask(task.id)} 
-            style={{ cursor: 'pointer', padding: '15px', backgroundColor: '#f0f8ff', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-          >
-            <div>
-              <strong>{task.title}</strong> <small style={{ color: '#666' }}>(Yaratuvchi: {task.creator?.department || 'Noma\'lum'})</small>
-              <span style={{ marginLeft: '20px', color: '#007bff' }}>
-                {openTasks[task.id] ? '▼' : '▶'} Batafsil
-              </span>
-            </div>
-            {user.role === 'admin' && (
-              <button onClick={(e) => {
-                e.stopPropagation()
-                handleDeleteTask(task.id)
-              }} style={{ backgroundColor: '#dc3545', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '5px' }}>
-                O‘chirish
-              </button>
-            )}
-          </div>
 
-          {openTasks[task.id] && (
-            <div style={{ padding: '20px' }}>
-              <p>{task.description || 'Tavsif yo‘q'}</p>
-              <p><strong>Muddat:</strong> {task.deadline ? new Date(task.deadline).toLocaleDateString('uz-UZ') : 'Yo‘q'}</p>
-              <p><strong>Javoblar ko‘rinishi:</strong> {task.answersVisible ? 'Ha' : 'Yo‘q'}</p>
+      <div style={{ overflowX: 'auto', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <table style={{ width: '100%', minWidth: '1200px', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#e9ecef' }}>
+              <th style={{ padding: '12px', border: '1px solid #ccc', textAlign: 'center' }}>T/R</th>
+              <th style={{ padding: '12px', border: '1px solid #ccc', minWidth: '300px' }}>Topshiriq nomi</th>
+              <th style={{ padding: '12px', border: '1px solid #ccc', textAlign: 'center' }}>Muddat</th>
+              <th style={{ padding: '12px', border: '1px solid #ccc', textAlign: 'center' }}>Tumanlar holati</th>
+              <th style={{ padding: '12px', border: '1px solid #ccc', textAlign: 'center' }}>Amallar</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map((task, index) => {
+              // 15 ta tuman nomi (bazangizga moslashtiring)
+              const tumans = [
+                'Angor', 'Bandixon', 'Termiz', 'Sariosiyo', 'Sherobod', 'Sho‘rchi', 'Termiz shahar',
+                'Tuman 8', 'Tuman 9', 'Tuman 10', 'Tuman 11', 'Tuman 12', 'Tuman 13', 'Tuman 14', 'Tuman 15'
+              ];
 
-              {/* Javoblar */}
-              {task.Responses && task.Responses.length > 0 && (
-                <div style={{ marginTop: '15px' }}>
-                  <h4>Javoblar ({task.Responses.length} ta):</h4>
-                  {task.Responses.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt)).map((resp, index) => (
-                    <div key={resp.id} style={{ borderLeft: '4px solid #007bff', padding: '10px', margin: '10px 0', backgroundColor: '#f8f9fa' }}>
-                      <p><strong>{index + 1}-o‘rinda → {resp.responder?.department || 'Noma\'lum'}</strong> ({new Date(resp.submittedAt).toLocaleString('uz-UZ')})</p>
-                      <p><strong>Izoh:</strong> {resp.comment || 'Izoh yo‘q'}</p>
+              // Bajarilgan tumanlar
+              const completedTumans = task.Responses?.map(r => ({
+                department: r.responder?.department || 'Noma\'lum',
+                submittedAt: r.submittedAt,
+                status: r.status
+              })) || [];
 
-                      {/* Fayllar */}
-                      {resp.rejectReason && resp.rejectReason.includes('|||') && (
-                        <div style={{ marginTop: '10px' }}>
-                          <strong>Biriktirilgan fayllar:</strong>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                            {resp.rejectReason.split('|||').map((filePath, i) => {
-                              const fileName = filePath.split('/').pop().split('-').slice(1).join('-')
-                              return (
-                                <div key={i} style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '5px', backgroundColor: '#fff' }}>
-                                  <a href={`${API_URL}${filePath}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#007bff' }}>
-                                    📎 {fileName}
-                                  </a>
-                                  <br />
-                                  <a href={`${API_URL}${filePath}`} download style={{ fontSize: '12px', color: '#28a745' }}>
-                                    Yuklab olish ↓
-                                  </a>
-                                </div>
-                              )
-                            })}
+              // Bajarish vaqti bo‘yicha tartiblash
+              completedTumans.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+
+              return (
+                <tr key={task.id} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                  <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>{index + 1}</td>
+                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                    <strong>{task.title}</strong>
+                    <small style={{ color: '#666', display: 'block' }}>
+                      Yaratuvchi: {task.creator?.department || 'Noma\'lum'}
+                    </small>
+                  </td>
+                  <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                    {task.deadline ? new Date(task.deadline).toLocaleDateString('uz-UZ') : 'Yo‘q'}
+                  </td>
+                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {tumans.map((tuman) => {
+                        const completed = completedTumans.find(c => c.department === tuman);
+                        const rank = completed ? completedTumans.indexOf(completed) + 1 : null;
+
+                        return (
+                          <div
+                            key={tuman}
+                            title={completed ? `Bajarilgan: ${new Date(completed.submittedAt).toLocaleString('uz-UZ')}` : 'Bajarilmagan'}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              backgroundColor: completed ? '#28a745' : '#e9ecef',
+                              color: completed ? 'white' : '#6c757d',
+                              opacity: completed ? 1 : 0.6,
+                              minWidth: '80px',
+                              textAlign: 'center',
+                              position: 'relative'
+                            }}
+                          >
+                            {tuman}
+                            {completed && rank && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '-6px',
+                                right: '-6px',
+                                backgroundColor: '#fff',
+                                color: '#28a745',
+                                borderRadius: '50%',
+                                width: '18px',
+                                height: '18px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                border: '1px solid #28a745'
+                              }}>
+                                {rank}
+                              </span>
+                            )}
                           </div>
-                        </div>
-                      )}
-
-                      <p>
-                        {resp.status === 'accepted' && <span style={{ color: 'green', fontWeight: 'bold' }}>✓ Qabul qilindi</span>}
-                        {resp.status === 'rejected' && <span style={{ color: 'red', fontWeight: 'bold' }}>✗ Rad etildi</span>}
-                        {resp.status === 'pending' && user.role === 'viloyat' && (
-                          <div style={{ marginTop: '10px' }}>
-                            <button onClick={() => handleReview(resp.id, 'accepted')} style={{ backgroundColor: '#28a745', color: 'white', marginRight: '10px' }}>Qabul qilish</button>
-                            <button onClick={() => {
-                              const reason = prompt('Rad etish sababi:')
-                              if (reason) handleReview(resp.id, 'rejected', reason)
-                            }} style={{ backgroundColor: '#dc3545', color: 'white' }}>Rad etish</button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                    {user.role === 'admin' && (
+                      <button onClick={() => handleDeleteTask(task.id)} style={{ backgroundColor: '#dc3545', color: 'white', padding: '6px 12px', border: 'none', borderRadius: '5px' }}>
+                        O‘chirish
+                      </button>
+                    )}
+                    {user.role === 'tuman' && (!task.Responses || !task.Responses.find(r => r.responderId === user.id)) && (
+                      <button onClick={() => setSelectedTask(task)} style={{ backgroundColor: '#007bff', color: 'white', padding: '6px 12px', border: 'none', borderRadius: '5px' }}>
+                        Javob berish
+                      </button>
+                    )}
+                    {user.role === 'viloyat' && task.Responses && task.Responses.map(resp => (
+                      <div key={resp.id} style={{ margin: '5px 0' }}>
+                        {resp.status === 'pending' && (
+                          <div>
+                            <button
+                              onClick={() => handleReview(resp.id, 'accepted')}
+                              style={{
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                padding: '6px 12px',
+                                border: 'none',
+                                borderRadius: '5px',
+                                marginRight: '5px'
+                              }}
+                            >
+                              Qabul qilish
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Rad etish sababi:')
+                                if (reason) handleReview(resp.id, 'rejected', reason)
+                              }}
+                              style={{
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                padding: '6px 12px',
+                                border: 'none',
+                                borderRadius: '5px'
+                              }}
+                            >
+                              Rad etish (izoh bilan)
+                            </button>
                           </div>
                         )}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {user.role === 'tuman' && (!task.Responses || !task.Responses.find(r => r.responderId === user.id)) && (
-                <button onClick={() => setSelectedTask(task)} style={{ marginTop: '15px', backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px' }}>
-                  Javob berish
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
+                      </div>
+                    ))}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {/* Javob berish formasi */}
       {selectedTask && user.role === 'tuman' && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '30px', border: '3px solid #007bff', borderRadius: '12px', boxShadow: '0 0 30px rgba(0,0,0,0.4)', zIndex: 1000, maxWidth: '500px', width: '90%' }}>
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'white',
+          padding: '30px',
+          border: '3px solid #007bff',
+          borderRadius: '12px',
+          boxShadow: '0 0 30px rgba(0,0,0,0.4)',
+          zIndex: 1000,
+          maxWidth: '500px',
+          width: '90%'
+        }}>
           <h3>{selectedTask.title} uchun javob</h3>
           <form onSubmit={handleSubmitResponse}>
             <textarea placeholder="Izoh yozing..." value={comment} onChange={e => setComment(e.target.value)} style={{ width: '100%', height: '100px', padding: '10px', marginBottom: '10px' }} required />
@@ -564,16 +646,35 @@ function App() {
 
       {/* Tahrirlash oynasi */}
       {editingUser && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '30px', border: '3px solid #007bff', borderRadius: '12px', boxShadow: '0 0 30px rgba(0,0,0,0.4)', zIndex: 1000, width: '400px' }}>
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'white',
+          padding: '30px',
+          border: '3px solid #007bff',
+          borderRadius: '12px',
+          boxShadow: '0 0 30px rgba(0,0,0,0.4)',
+          zIndex: 1000,
+          width: '400px'
+        }}>
           <h3>{editingUser.username} ni tahrirlash</h3>
           <form onSubmit={handleEditUser}>
             <input type="text" placeholder="Bo‘lim nomi" value={editDepartment} onChange={e => setEditDepartment(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '10px' }} />
-            <select value={editRole} onChange={e => setEditRole(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '20px' }}>
+            <select value={editRole} onChange={e => setEditRole(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '10px' }}>
               <option value="tuman">Tuman bo‘limi</option>
               <option value="viloyat">Viloyat bo‘limi</option>
               <option value="tahlilchi">Tahlilchi</option>
               <option value="admin">Admin</option>
             </select>
+            <input
+              type="password"
+              placeholder="Yangi parol (bo‘sh qoldirsa o‘zgarmaydi)"
+              value={editPassword}
+              onChange={e => setEditPassword(e.target.value)}
+              style={{ width: '100%', padding: '10px', marginBottom: '20px' }}
+            />
             <div style={{ textAlign: 'right' }}>
               <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', marginRight: '10px' }}>Saqlash</button>
               <button type="button" onClick={() => setEditingUser(null)} style={{ padding: '10px 20px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px' }}>Bekor qilish</button>

@@ -40,7 +40,7 @@ const PORT = process.env.PORT || 5000;
 syncDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`e-ijro ishlayapti!`);
-    console.log(`http://localhost:${PORT}`);
-    console.log(`http://e-ijro:${PORT}`);
+    console.log(`Mahalliy: http://localhost:${PORT}`);
+    console.log(`Tarmoq: http://sizning_ip:${PORT}`);
   });
 });
